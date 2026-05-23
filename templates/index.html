@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AutoDash</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#f0f4f8;color:#1a1a2e;min-height:100vh;display:flex}
+
+/* SIDEBAR */
+.sidebar{width:200px;min-width:200px;background:#1a1a2e;display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;height:100vh;z-index:100}
+.sidebar-logo{display:flex;align-items:center;gap:8px;padding:16px 20px;
+  border-bottom:1px solid rgba(255,255,255,0.07)}
+.logo-icon{background:#1a73e8;border-radius:6px;width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;font-size:13px;
+  color:white;font-weight:700;flex-shrink:0}
+.logo-text{color:white;font-size:15px;font-weight:700}
+.logo-text b{color:#4da3ff}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;
+  color:rgba(255,255,255,0.5);font-size:13px;font-weight:500;cursor:pointer;
+  border-left:3px solid transparent;transition:all .15s}
+.nav-item:hover{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.9)}
+.nav-item.active{background:rgba(26,115,232,0.15);color:white;border-left-color:#1a73e8}
+.nav-spacer{flex:1}
+
+/* MAIN */
+.main{margin-left:200px;flex:1;display:flex;flex-direction:column}
+
+/* TOPBAR */
+.topbar{background:white;border-bottom:1px solid #e8ecf0;padding:10px 24px;
+  display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.topbar-file{font-size:13px;color:#6b7280}
+.topbar-file strong{color:#1a1a2e}
+.topbar-btns{margin-left:auto;display:flex;gap:8px}
+.btn-blue{background:#1a73e8;color:white;border:none;padding:7px 16px;
+  border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;gap:6px;font-family:inherit}
+.btn-blue:hover{background:#1557b0}
+.btn-outline{background:white;color:#444;border:1px solid #d0d7de;padding:7px 14px;
+  border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit}
+
+/* CONTENT */
+.content{padding:24px;flex:1}
+.page-title{font-size:21px;font-weight:700;color:#1a1a2e;margin-bottom:20px;letter-spacing:-.4px}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.kpi-card{border-radius:10px;padding:16px 18px;color:white;display:flex;
+  align-items:center;gap:14px;position:relative;overflow:hidden}
+.kpi-card::after{content:'';position:absolute;right:-10px;top:-10px;
+  width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,0.12)}
+.kpi-icon{width:44px;height:44px;border-radius:8px;background:rgba(255,255,255,0.22);
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.kpi-label{font-size:11px;font-weight:500;opacity:.88;margin-bottom:2px}
+.kpi-value{font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1}
+
+/* CHART ROWS */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.chart-card{background:white;border-radius:10px;border:1px solid #e8ecf0;padding:16px 20px;overflow:hidden}
+.chart-title{font-size:14px;font-weight:600;color:#1a1a2e}
+.chart-sub{font-size:11px;color:#8892a4;margin-bottom:10px}
+
+/* TABLE */
+.table-card{background:white;border-radius:10px;border:1px solid #e8ecf0;padding:16px 20px}
+.table-scroll{overflow-x:auto}
+table.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table thead tr{background:#f7f9fc}
+.data-table th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;
+  color:#6b7280;text-transform:uppercase;letter-spacing:.5px;
+  border-bottom:1px solid #e8ecf0;white-space:nowrap}
+.data-table td{padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#374151;white-space:nowrap}
+.data-table tr:last-child td{border:none}
+.data-table tr:hover td{background:#f7f9fc}
+
+/* UPLOAD PAGE */
+#upload-page{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:72vh;text-align:center}
+.drop-zone{border:2px dashed #c9d1db;border-radius:16px;padding:56px 80px;
+  cursor:pointer;transition:all .2s;background:white;width:100%;max-width:500px}
+.drop-zone:hover,.drop-zone.drag{border-color:#1a73e8;background:#f0f7ff}
+.drop-icon{font-size:48px;margin-bottom:12px;display:block}
+.drop-title{font-size:18px;font-weight:700;color:#1a1a2e;margin-bottom:6px}
+.drop-sub{font-size:13px;color:#6b7280;margin-bottom:20px}
+.formats{margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.fmt{background:#f0f4f8;color:#6b7280;font-size:11px;font-weight:600;
+  padding:4px 10px;border-radius:4px;letter-spacing:.5px}
+#file-input,#file-input-top{display:none}
+.error-msg{background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;
+  padding:12px 16px;color:#dc2626;font-size:13px;margin-top:12px;
+  display:none;max-width:500px;width:100%;text-align:left}
+
+/* LOADING */
+#loading-page{display:none;flex-direction:column;align-items:center;
+  justify-content:center;min-height:72vh;text-align:center}
+.spinner{width:44px;height:44px;border:3px solid #e8ecf0;border-top-color:#1a73e8;
+  border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:#6b7280}
+
+/* HIDDEN */
+#dashboard-page{display:none}
+
+@media(max-width:900px){
+  .sidebar{width:52px;min-width:52px}
+  .logo-text,.nav-item span:last-child{display:none}
+  .main{margin-left:52px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .charts-row{grid-template-columns:1fr}
+}
+@media(max-width:560px){.kpi-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">A</div>
+    <span class="logo-text">Auto<b>Dash</b></span>
+  </div>
+  <div style="height:10px"></div>
+  <div class="nav-item active" id="nav-home">
+    <span>⊞</span><span>Tableau de Bord</span>
+  </div>
+  <div class="nav-item"><span>∿</span><span>Analyse</span></div>
+  <div class="nav-item"><span>⏱</span><span>Historique</span></div>
+  <div class="nav-spacer"></div>
+  <div class="nav-item"><span>⚙</span><span>Paramètres</span></div>
+  <div style="height:10px"></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-file">
+      Fichier : <strong id="topbar-fname">Aucun fichier chargé</strong>
+    </div>
+    <div class="topbar-btns">
+      <label class="btn-blue" for="file-input-top">↑ Nouvel Upload</label>
+      <input type="file" id="file-input-top" accept=".csv,.xlsx,.xls"/>
+      <button class="btn-outline">⚙ Paramètres</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- PAGE UPLOAD -->
+    <div id="upload-page">
+      <div class="drop-zone" id="drop-zone">
+        <span class="drop-icon">📊</span>
+        <div class="drop-title">Déposez votre fichier ici</div>
+        <div class="drop-sub">Glissez-déposez ou cliquez pour choisir</div>
+        <label class="btn-blue" for="file-input" style="display:inline-flex">Parcourir…</label>
+        <input type="file" id="file-input" accept=".csv,.xlsx,.xls"/>
+        <div class="formats">
+          <span class="fmt">CSV</span>
+          <span class="fmt">XLSX</span>
+          <span class="fmt">XLS</span>
+          <span class="fmt">max 16 MB</span>
+        </div>
+      </div>
+      <div class="error-msg" id="error-msg"></div>
+    </div>
+
+    <!-- PAGE LOADING -->
+    <div id="loading-page">
+      <div class="spinner"></div>
+      <div class="loading-text">Analyse en cours…</div>
+    </div>
+
+    <!-- PAGE DASHBOARD -->
+    <div id="dashboard-page">
+      <div class="page-title" id="dash-title">Dashboard Automatique</div>
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <div class="charts-row">
+        <div class="chart-card" id="card-line" style="display:none">
+          <div class="chart-title" id="title-line"></div>
+          <div class="chart-sub"  id="sub-line"></div>
+          <div id="chart-line"></div>
+        </div>
+        <div class="chart-card" id="card-pie" style="display:none">
+          <div class="chart-title" id="title-pie"></div>
+          <div class="chart-sub"  id="sub-pie"></div>
+          <div id="chart-pie"></div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card" id="card-bar" style="display:none">
+          <div class="chart-title" id="title-bar"></div>
+          <div class="chart-sub"  id="sub-bar"></div>
+          <div id="chart-bar"></div>
+        </div>
+        <div class="table-card">
+          <div class="chart-title" style="margin-bottom:12px">
+            Tableau des Données <span style="color:#8892a4;font-size:11px;font-weight:400">(10 dernières entrées)</span>
+          </div>
+          <div class="table-scroll" id="table-wrap"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function bindInput(id, zoneId) {
+  const inp = document.getElementById(id);
+  if (inp) inp.addEventListener('change', e => { if(e.target.files[0]) processFile(e.target.files[0]); });
+  const zone = document.getElementById(zoneId);
+  if (zone) {
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('drag');
+      if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+    });
+  }
+}
+bindInput('file-input', 'drop-zone');
+bindInput('file-input-top', null);
+
+function show(id) {
+  ['upload-page','loading-page','dashboard-page'].forEach(p => {
+    document.getElementById(p).style.display = p === id ? (p === 'loading-page' ? 'flex' : 'block') : 'none';
+  });
+}
+
+function processFile(file) {
+  document.getElementById('error-msg').style.display = 'none';
+  show('loading-page');
+  const fd = new FormData();
+  fd.append('file', file);
+  fetch('/upload', { method:'POST', body:fd })
+    .then(r => r.json())
+    .then(d => { if (d.error) showErr(d.error); else renderDash(d); })
+    .catch(() => showErr('Erreur de connexion au serveur.'));
+}
+
+function showErr(msg) {
+  show('upload-page');
+  const e = document.getElementById('error-msg');
+  e.textContent = '⚠ ' + msg;
+  e.style.display = 'block';
+}
+
+function renderDash(data) {
+  const { context: ctx, kpi, charts, table, filename } = data;
+
+  document.getElementById('topbar-fname').textContent = `'${filename}' (Uploaded)`;
+  document.getElementById('dash-title').textContent = ctx.title;
+
+  const kpis = [
+    { icon: ctx.icon_total, label: ctx.label_total, value: kpi.total, bg: ctx.color1 },
+    { icon: ctx.icon_avg,   label: ctx.label_avg,   value: kpi.avg,   bg: ctx.color2 },
+    { icon: ctx.icon_count, label: ctx.label_count, value: kpi.count, bg: ctx.color3 },
+    { icon: ctx.icon_cat,   label: ctx.label_cat,   value: kpi.cat_count, bg: ctx.color4 },
+  ];
+  document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
+    <div class="kpi-card" style="background:${k.bg}">
+      <div class="kpi-icon">${k.icon}</div>
+      <div>
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value">${k.value}</div>
+      </div>
+    </div>`).join('');
+
+  charts.forEach(c => {
+    const suffix = c.id.replace('chart-','');
+    const card = document.getElementById('card-' + suffix);
+    if (!card) return;
+    card.style.display = 'block';
+    document.getElementById('title-' + suffix).textContent = c.title;
+    document.getElementById('sub-'   + suffix).textContent = c.subtitle;
+    const p = JSON.parse(c.data);
+    Plotly.newPlot(c.id, p.data, p.layout, { responsive:true, displayModeBar:false });
+  });
+
+  document.getElementById('table-wrap').innerHTML = table;
+  show('dashboard-page');
+}
+</script>
+</body>
+</html>
